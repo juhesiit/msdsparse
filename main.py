@@ -4,8 +4,7 @@
 """
 This script scrapes Sigma-Aldrich MSDS pdf files for hazard statements as required by Aalto University School of Chemical Engineering requirements.
 
-Juha Siitonen, ETOS group 29.6.2023
-https://etosgroup.fi/
+Juha Siitonen 29.6.2023
 Aalto University
 
 This project is licensed under the terms of the MIT license.
@@ -102,8 +101,6 @@ print("ETOS group A!lto MSDS scaper")
 print("{} MSDS files found in the directory".format(totalNumberOfFiles))
 print()
 
-
-
 # Go through all the files
 for index,f in enumerate(allFiles):
     print("File: " + f + " (" + str(index+1) + "/" + str(totalNumberOfFiles) + ")")
@@ -122,19 +119,11 @@ for index,f in enumerate(allFiles):
 
     # Check to find a name for the chemical, this assumes Sigma-Aldrich style MSDS
     name = extract_text(firstPage, r"Product name(.*?)Product Number")
-
-    if name:
-        print("Compound name" + name)
-    else:
-        print("Compound name: NOT FOUND IN MSDS")
+    print("Compound name" + (name if name else ": NOT FOUND IN MSDS"))
 
     # Check to find a CAS No for the chemical, this assumes Sigma-Aldrich style MSDS
     cas = extract_text(firstPage, r"CAS-No.(.*?)1.2")
-
-    if cas:
-        print("Compound CAS" + cas)
-    else:
-        print("Compound CAS: NOT FOUND IN MSDS")
+    print("Compound CAS" + (str(cas) if name else ": NOT FOUND IN MSDS"))
     
     # This list will contain all the red flag hazard statements
     statements = []
@@ -152,16 +141,7 @@ for index,f in enumerate(allFiles):
             statements = statements + results
 
     # Were red flag statements found?
-    if statements:
-        print("Red flag: Yes")
-    else:
-        print("Red flag: No")
-
-    # Particularily hazardous substance (Yes/No)
-    if statements:
-        print("Particularily hazardous: Yes")
-    else:
-        print("Particularily hazardous: No")
+    print("Particularily hazardous: " + ("Yes" if statements else "No"))
 
     # Filter out CMR chemical (Yes/No, which statements)
     cmrStatements = [i for i in statements if i in cmrFilter]
