@@ -112,9 +112,6 @@ for index,f in enumerate(allFiles):
     pdfReader = PyPDF2.PdfFileReader(pdfFile)
     documentPagesMax = pdfReader.numPages
 
-    # Collect all found red flag statements in this list
-    collectedStatements = []
-
     # Collect the compound name and CAS number from the first page
     pageObj = pdfReader.getPage(0)
     firstPage = pageObj.extractText().replace('\n', '')
