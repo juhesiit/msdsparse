@@ -33,15 +33,15 @@ Compound CAS: 151-50-8
 Particularily hazardous: Yes
 CMR chemical: Yes
 CMR H-phrases: H372
-Other H and EU Phrases chemical: H300, H310, H330, EUH032
+Other H and EU Phrases chemical: H300, H310, H330
 
 File: example2.pdf (2/4)
 --------------------------------
 Compound name: n-Butyllithium solution
-Compound CASNone
+Compound CAS: NOT FOUND IN MSDS
 Particularily hazardous: Yes
 CMR chemical: Yes
-CMR H-phrases: H361, H361f, H373
+CMR H-phrases: H361, H373
 Other H and EU Phrases: No
 
 File: example3.pdf (3/4)
@@ -51,7 +51,7 @@ Compound CAS: 26628-22-8
 Particularily hazardous: Yes
 CMR chemical: Yes
 CMR H-phrases: H373
-Other H and EU Phrases chemical: H300, H310, H330, EUH032
+Other H and EU Phrases chemical: H300, H310, H330
 
 File: example4.pdf (4/4)
 --------------------------------
