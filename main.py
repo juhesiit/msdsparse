@@ -4,6 +4,7 @@
 """
 This script scrapes Sigma-Aldrich MSDS pdf files for hazard statements as required by Aalto University School of Chemical Engineering requirements.
 
+Juha Siitonen 5.2.2025
 Juha Siitonen 29.6.2023
 Aalto University
 
@@ -72,18 +73,17 @@ Example:
         * Scraper directly with CAS-numbers
 """
 
-import PyPDF2
+import PyPDF3
 from os import listdir
 import re
 
 # Define red flags
-redFlags = ["H340", "H341", "H350", "H350i", "H360", "H360D", "H360Df", "H360F", "H360FD", "H360Fd", "H361", "H361d", "H361df", "H362", "H370", "H371", "H372", "H373", "H300", "H301", "H310", "H311", "H330", "H331", "UEH001", "EUH006", "EUH019", "EUH029", "EUH031", "EUH32", "EUH044", "EUH070", "EUH071"]
-cmrFilter = ["H340", "H350", "H341", "H350", "H350i", "H351", "H360", "H360D", "H360Df", "H360F", "H360FD", "H360Fd", "H361", "H361d", "H361f", "H361fd", "H362", "H370", "H371", "H372", "H373"]
-otherFilter = ["H300", "H301", "H310", "H311", "H330", "H331", "EUH001", "EUH006", "EUH019", "EUH029", "EUH031", "EUH032", "EUH044", "EUH070", "EUH071"]
+RED_FLAGS = ("H340", "H341", "H350", "H350i", "H360", "H360D", "H360Df", "H360F", "H360FD", "H360Fd", "H361", "H361d", "H361df", "H362", "H370", "H371", "H372", "H373", "H300", "H301", "H310", "H311", "H330", "H331", "UEH001", "EUH006", "EUH019", "EUH029", "EUH031", "EUH32", "EUH044", "EUH070", "EUH071")
+CMR_FILTER = ("H340", "H350", "H341", "H350", "H350i", "H351", "H360", "H360D", "H360Df", "H360F", "H360FD", "H360Fd", "H361", "H361d", "H361f", "H361fd", "H362", "H370", "H371", "H372", "H373")
+OTHER_FILTER = ("H300", "H301", "H310", "H311", "H330", "H331", "EUH001", "EUH006", "EUH019", "EUH029", "EUH031", "EUH032", "EUH044", "EUH070", "EUH071")
 
 # Extract text using regexp
 def extract_text(text, pattern):
-    pattern = pattern
     match = re.search(pattern, text, re.DOTALL)
     if match:
         extracted_text = match.group(1).strip()
@@ -91,85 +91,82 @@ def extract_text(text, pattern):
     else:
         return None
 
-# Check for all pdfs in the current directory
-allFiles = listdir()
-allFiles = [i for i in allFiles if '.pdf' in i]
-totalNumberOfFiles = len(allFiles)
-
-# Print the initialization text
-print("ETOS group A!lto MSDS scaper")
-print("{} MSDS files found in the directory".format(totalNumberOfFiles))
-print()
-
-
-
-# Go through all the files
-for index,f in enumerate(allFiles):
-    print("File: " + f + " (" + str(index+1) + "/" + str(totalNumberOfFiles) + ")")
-    print("--------------------------------")
-    # Read the file
-    pdfFile = open(f, 'rb')
-    pdfReader = PyPDF2.PdfFileReader(pdfFile)
-    documentPagesMax = pdfReader.numPages
-
+def extract_first_page_info(pdf_reader):
     # Collect the compound name and CAS number from the first page
-    pageObj = pdfReader.getPage(0)
-    firstPage = pageObj.extractText().replace('\n', '')
+    first_page = pdf_reader.getPage(0).extractText().replace('\n', '')
 
-    # Check to find a name for the chemical, this assumes Sigma-Aldrich style MSDS
-    name = extract_text(firstPage, r"Product name(.*?)Product Number")
+    # Get the name and MSDS, this assumes Sigma-Aldrich style MSDS
+    name = extract_text(first_page, r"Product name :(.*?)Product Number")
+    cas = extract_text(first_page, r"CAS-No. :(.*?)1.2")
 
-    if name:
-        print("Compound name" + name)
-    else:
-        print("Compound name: NOT FOUND IN MSDS")
+    return name, cas
 
-    # Check to find a CAS No for the chemical, this assumes Sigma-Aldrich style MSDS
-    cas = extract_text(firstPage, r"CAS-No.(.*?)1.2")
-
-    if cas:
-        print("Compound CAS" + cas)
-    else:
-        print("Compound CAS: NOT FOUND IN MSDS")
-    
+def extract_hazard_statements(pdf_reader):
     # This list will contain all the red flag hazard statements
     statements = []
 
     # Go through the document and check for red flags appearing on each page
-    for pageIndex in range(0, documentPagesMax):
-        pageObj = pdfReader.getPage(pageIndex)
-        pageText = pageObj.extractText()
+    for pageIndex in range(0, pdf_reader.getNumPages()):
+        page_obj = pdf_reader.getPage(pageIndex)
+        page_text = page_obj.extractText()
 
         # Add to results if a new red flag statement was found
-        results = [statement for statement in redFlags if statement in pageText and statement not in statements]
+        results = [statement for statement in RED_FLAGS if statement in page_text and statement not in statements]
 
         # Append any new ones to the masterlist
         if results:
             statements = statements + results
 
-    # Particularily hazardous substance (Yes/No)
-    if statements:
-        print("Particularily hazardous: Yes")
-    else:
-        print("Particularily hazardous: No")
+    return statements
 
-    # Filter out CMR chemical (Yes/No, which statements)
-    cmrStatements = [i for i in statements if i in cmrFilter]
+if __name__ == "__main__":
+    # Check for all pdfs in the current directory
+    all_files = [file for file in listdir() if file.endswith(".pdf")]
+    no_of_files = len(all_files)
 
-    if cmrStatements:
-        print("CMR chemical: Yes")
-        print("CMR H-phrases: ", end="")
-        print(*cmrStatements, sep=", ")
-    else:
-        print("CMR chemical: No")
-
-    # Filter out other statements with major risks (Yes/No, which statements)
-    otherStatements = [i for i in statements if i in otherFilter]
-
-    if otherStatements:
-        print("Other H and EU Phrases chemical: ", end="")
-        print(*otherStatements, sep=", ")
-    else:
-        print("Other H and EU Phrases: No")
-    
+    # Print the initialization text
+    print("ETOS group A!lto MSDS parser")
+    print(f"{no_of_files} MSDS files found in the directory")
     print()
+
+    # Go through all the files
+    for index, file in enumerate(all_files):
+        # Read the file and extract key information
+        with open(file, 'rb') as pdf_file:
+            pdf_reader = PyPDF3.PdfFileReader(pdf_file)
+
+            name, cas = extract_first_page_info(pdf_reader)
+            statements = extract_hazard_statements(pdf_reader)
+
+        # Filter out CMR chemical (Yes/No, which statements)
+        cmr_statements = [statement for statement in statements if statement in CMR_FILTER]
+
+        # Filter out other statements with major risks (Yes/No, which statements)
+        other_statements = [statement for statement in statements if statement in OTHER_FILTER]
+
+        # Output stage
+
+        print(f"File: {file} ({index + 1}/{no_of_files})")
+        print("--------------------------------")
+
+        print("Compound name:", name if name else "NOT FOUND IN MSDS")
+        print("Compound CAS:", cas if cas else "NOT FOUND IN MSDS")
+
+        # Particularily hazardous substance (Yes/No)
+        print("Particularily hazardous:", "Yes" if statements else "No")
+
+        # CMR (Yes/No)
+        print("CMR chemical:", "Yes" if cmr_statements else "No")
+
+        # H-prases associated with CMR in any
+        if cmr_statements:
+            print(f"CMR H-phrases: {', '.join(cmr_statements)}")
+
+        # Other major risk (Yes/No)
+        print("Other major risk chemical:", "Yes" if other_statements else "No")
+
+        # H-phrases associated with other major risk if any
+        if other_statements:
+            print(f"Other H-phrases: {', '.join(other_statements)}")
+    
+        print()
